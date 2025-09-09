@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 // If your alias "@" points to ./src (the default), this import will work.

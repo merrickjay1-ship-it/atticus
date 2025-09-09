@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
@@ -16,8 +17,8 @@ export async function POST(req: Request) {
   // customer_creation: "always",
   // You can optionally prefill an email (else Checkout will collect it)
   // customer_email: undefined,
-  success_url: "http://localhost:3002/success",
-  cancel_url: "http://localhost:3002/cancel",
+  success_url: "http://localhost:3000/success",
+  cancel_url: "http://localhost:3000/cancel",
 });
 
 
