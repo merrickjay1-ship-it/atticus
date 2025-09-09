@@ -10,7 +10,10 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  // Next.js + TypeScript base configs
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+
+  // Ignore common build artifacts
   {
     ignores: [
       "node_modules/**",
@@ -19,6 +22,14 @@ const eslintConfig = [
       "build/**",
       "next-env.d.ts",
     ],
+  },
+
+  // ✅ Scoped override: allow `any` only inside API routes
+  {
+    files: ["src/app/api/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
   },
 ];
 
