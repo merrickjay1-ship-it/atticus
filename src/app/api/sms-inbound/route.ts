@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: Request) {
-  // Read envs at request-time only (prevents build-time crash)
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -21,38 +20,32 @@ export async function POST(req: Request) {
   const body = (form.get("Body") as string) || "";
   const mediaCount = parseInt((form.get("NumMedia") as string) || "0", 10);
 
-  // Upsert user by phone
-  if (from) {
-    await supabase.from("users").upsert(
-      { phone: from },
-      { onConflict: "phone" }
-    );
+  // ✅ This matches your sms_logs definition (direction + payload jsonb)
+  const payload = Object.fromEntries(form.entries());
+  const { error: logErr } = await supabase.from("sms_logs").insert({
+    direction: "inbound",
+    payload: {
+      from,
+      body,
+      mediaCount,
+      raw: payload,
+      receivedAt: new Date().toISOString(),
+    },
+  });
+  if (logErr) {
+    console.error("sms_logs insert error", logErr);
   }
 
-  // Log the inbound message
-  await supabase.from("sms_logs").insert({
-    phone: from,
-    body,
-    direction: "inbound",
-  });
+  // (We’ll wire checkins/users after we confirm column names.)
 
-  // Record a "check-in" (MVP)
-  await supabase.from("checkins").insert({
-    phone: from,
-    body,
-    direction: "inbound",
-    media_count: mediaCount,
-  });
-
-  // Auto-reply via TwiML so Twilio sends the SMS back to the user
+  // TwiML auto-reply
   const reply =
     "Hey, it’s AIVA 👋 You’re in. I’ll send tiny money check-ins, nothing spammy. Reply STOP to opt out.";
-
   const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${reply}</Message></Response>`;
   return new Response(twiml, { headers: { "Content-Type": "text/xml" } });
 }
 
+// Health check
 export async function GET() {
-  // Health check (used by you + Vercel)
   return NextResponse.json({ ok: true });
 }
