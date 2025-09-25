@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
-export const runtime = "nodejs"; // required for raw body
+// Required so we can read the raw body for signature verification
+export const runtime = "nodejs";
 
-async function getRawBody(req: NextRequest) {
+async function getRawBody(req: NextRequest): Promise<Buffer> {
   const buf = await req.arrayBuffer();
   return Buffer.from(buf);
 }
@@ -22,18 +23,24 @@ export async function POST(req: NextRequest) {
 
   let event: Stripe.Event;
 
+  // Verify Stripe signature using the raw body
   try {
     const rawBody = await getRawBody(req);
     event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
   } catch (err: unknown) {
-    console.error(
-      "❌ Webhook signature verification failed:",
-      (err as Error).message
-    );
+    const msg = (err as Error)?.message || "unknown error";
+    console.error("Webhook signature verification failed:", msg);
     return new NextResponse("Bad signature", { status: 400 });
   }
 
+  // Minimal handler: just log the event type for now
   try {
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object as Strip
+    console.log("Stripe event received:", event.type);
+  } catch (err: unknown) {
+    const msg = (err as Error)?.message || "unknown error";
+    console.error("Handler error:", msg);
+    return new NextResponse("Handler error", { status: 500 });
+  }
+
+  return NextResponse.json({ received: true });
+}
