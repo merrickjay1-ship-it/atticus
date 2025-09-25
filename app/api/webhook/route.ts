@@ -9,7 +9,7 @@ async function getRawBody(req: NextRequest) {
 }
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-06-20",
+  apiVersion: "2025-08-27.basil",
 });
 
 export async function POST(req: NextRequest) {
@@ -56,12 +56,4 @@ export async function POST(req: NextRequest) {
         break;
       }
       default:
-        console.log(`ℹ️ Unhandled event: ${event.type}`);
-    }
-  } catch (err: unknown) {
-    console.error("⚠️ Handler error:", (err as Error).message);
-    return new NextResponse("Handler error", { status: 500 });
-  }
-
-  return NextResponse.json({ received: true });
-}
+        console.log(`ℹ️ Unhandled event: $
