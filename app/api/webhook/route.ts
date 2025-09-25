@@ -36,24 +36,4 @@ export async function POST(req: NextRequest) {
   try {
     switch (event.type) {
       case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        console.log("✅ checkout.session.completed", session.id);
-        break;
-      }
-      case "invoice.paid": {
-        const invoice = event.data.object as Stripe.Invoice;
-        console.log("✅ invoice.paid", invoice.id);
-        break;
-      }
-      case "customer.subscription.created": {
-        const sub = event.data.object as Stripe.Subscription;
-        console.log("✅ subscription.created", sub.id);
-        break;
-      }
-      case "payment_intent.succeeded": {
-        const pi = event.data.object as Stripe.PaymentIntent;
-        console.log("✅ payment_intent.succeeded", pi.id);
-        break;
-      }
-      default:
-        console.log(`ℹ️ Unhandled event: $
+        const session = event.data.object as Strip
