@@ -25,8 +25,11 @@ export async function POST(req: NextRequest) {
   try {
     const rawBody = await getRawBody(req);
     event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
-  } catch (err: any) {
-    console.error("❌ Webhook signature verification failed:", err?.message);
+  } catch (err: unknown) {
+    console.error(
+      "❌ Webhook signature verification failed:",
+      (err as Error).message
+    );
     return new NextResponse("Bad signature", { status: 400 });
   }
 
@@ -55,8 +58,8 @@ export async function POST(req: NextRequest) {
       default:
         console.log(`ℹ️ Unhandled event: ${event.type}`);
     }
-  } catch (err) {
-    console.error("⚠️ Handler error:", err);
+  } catch (err: unknown) {
+    console.error("⚠️ Handler error:", (err as Error).message);
     return new NextResponse("Handler error", { status: 500 });
   }
 
