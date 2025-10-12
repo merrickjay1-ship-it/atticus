@@ -4,4 +4,7 @@
 - Affects: Web (Next.js on Vercel).
 - Expected: Build succeeds; `/` serves from `src/app/page.tsx`.
 - Rollback: Recreate file (NOT recommended).
+### 2025-10-12 — Database: add core fintech tables
+- Added tables: `plaid_items`, `plaid_accounts`, `transactions`, `goals`, `nudges`, `subscriptions`.
+- No app code changes; created via Supabase SQL Editor.
 
