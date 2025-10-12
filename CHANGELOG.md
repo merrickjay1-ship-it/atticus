@@ -7,4 +7,5 @@
 ### 2025-10-12 — Database: add core fintech tables
 - Added tables: `plaid_items`, `plaid_accounts`, `transactions`, `goals`, `nudges`, `subscriptions`.
 - No app code changes; created via Supabase SQL Editor.
+2025-10-12 — DB: enable RLS + owner-only SELECT for subscriptions.
 
