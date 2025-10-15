@@ -8,4 +8,8 @@
 - Added tables: `plaid_items`, `plaid_accounts`, `transactions`, `goals`, `nudges`, `subscriptions`.
 - No app code changes; created via Supabase SQL Editor.
 2025-10-12 — DB: enable RLS + owner-only SELECT for subscriptions.
+2025-10-14 — Fix Plaid test page path
+- Move Plaid test page from src/app/api/plaid/page.tsx to src/app/plaid/page.tsx.
+- Reason: files under app/api are API routes, not pages; /plaid was 404.
+- Affects: /plaid now renders client page and calls /api/plaid/create-link-token.
 
