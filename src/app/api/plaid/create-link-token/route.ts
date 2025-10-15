@@ -1,6 +1,13 @@
 // src/app/api/plaid/create-link-token/route.ts
 import { NextResponse } from 'next/server';
-import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
+import {
+  Configuration,
+  PlaidApi,
+  PlaidEnvironments,
+  Products,
+  CountryCode,
+  LinkTokenCreateRequest,
+} from 'plaid';
 
 export const runtime = 'nodejs';
 
@@ -20,19 +27,22 @@ function getPlaidClient() {
 
 export async function GET() {
   try {
-    // TODO: swap for the real authenticated user later
+    // TODO: swap with the real authenticated user's id later
     const client_user_id = 'demo-user';
 
-    const plaid = getPlaidClient();
-    const { data } = await plaid.linkTokenCreate({
+    const request: LinkTokenCreateRequest = {
       user: { client_user_id },
       client_name: 'Atticus',
-      products: ['transactions'],
-      country_codes: ['US'],
+      products: [Products.Transactions],
+      country_codes: [CountryCode.Us],
       language: 'en',
-      // If you later enable OAuth institutions:
+      // If/when you enable OAuth institutions, set PLAID_REDIRECT_URI in Vercel
+      // and then uncomment the next line:
       // redirect_uri: process.env.PLAID_REDIRECT_URI,
-    });
+    };
+
+    const plaid = getPlaidClient();
+    const { data } = await plaid.linkTokenCreate(request);
 
     return NextResponse.json({ link_token: data.link_token }, { status: 200 });
   } catch (e: any) {
