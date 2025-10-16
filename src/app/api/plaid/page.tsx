@@ -6,26 +6,49 @@ import Script from 'next/script';
 export default function PlaidTestPage() {
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [plaidReady, setPlaidReady] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   async function fetchLinkToken() {
     const res = await fetch('/api/plaid/create-link-token', { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to create link token');
     const json = await res.json();
     setLinkToken(json.link_token);
   }
 
   const openPlaid = useCallback(() => {
     if (!plaidReady || !linkToken || !(window as any).Plaid) return;
+
     const handler = (window as any).Plaid.create({
       token: linkToken,
-      onSuccess: (public_token: string, metadata: unknown) => {
-        // For now, just show it. Next step we'll POST to /api/plaid/exchange.
+      onSuccess: async (public_token: string, metadata: unknown) => {
         console.log('Plaid public_token:', public_token, metadata);
-        alert('Connected! public_token in console.');
+        setBusy(true);
+        try {
+          // NEW: exchange public_token on our server
+          const res = await fetch('/api/plaid/exchange', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ public_token }),
+          });
+          const json = await res.json();
+          console.log('Exchange result:', json);
+          if (json.ok) {
+            alert('Success! Token exchanged. Check console for details.');
+          } else {
+            alert('Exchange failed. See console for error.');
+          }
+        } catch (e: any) {
+          console.error('Exchange error:', e);
+          alert('Exchange threw an error (see console).');
+        } finally {
+          setBusy(false);
+        }
       },
       onExit: () => {
         // no-op
       },
     });
+
     handler.open();
   }, [plaidReady, linkToken]);
 
@@ -46,18 +69,21 @@ export default function PlaidTestPage() {
           <h1>Connect a bank (Plaid Link test)</h1>
           <button
             onClick={handleClick}
+            disabled={busy}
             style={{
               padding: '10px 16px',
               fontSize: 16,
               borderRadius: 8,
               border: '1px solid #ccc',
-              cursor: 'pointer',
+              cursor: busy ? 'not-allowed' : 'pointer',
+              opacity: busy ? 0.7 : 1,
             }}
           >
-            Launch Plaid Link
+            {busy ? 'Working…' : 'Launch Plaid Link'}
           </button>
           <p style={{ marginTop: 12, color: '#666' }}>
-            This is a temporary test page. It uses <code>/api/plaid/create-link-token</code>.
+            Uses <code>/api/plaid/create-link-token</code> and then POSTs to{' '}
+            <code>/api/plaid/exchange</code>.
           </p>
         </div>
       </main>
