@@ -1,54 +1,29 @@
 // src/app/api/plaid/create-link-token/route.ts
-import { NextResponse } from 'next/server';
-import {
-  Configuration,
-  PlaidApi,
-  PlaidEnvironments,
-  Products,
-  CountryCode,
-  LinkTokenCreateRequest,
-} from 'plaid';
+import { jsonErr, jsonOK, plaidClient, userIdFrom, env } from '../../_lib/utils';
 
 export const runtime = 'nodejs';
 
-function getPlaidClient() {
-  const env = (process.env.PLAID_ENV || 'sandbox').toLowerCase() as keyof typeof PlaidEnvironments;
-  const cfg = new Configuration({
-    basePath: PlaidEnvironments[env],
-    baseOptions: {
-      headers: {
-        'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID!,
-        'PLAID-SECRET': process.env.PLAID_SECRET!,
-      },
-    },
-  });
-  return new PlaidApi(cfg);
-}
-
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    // TODO: swap with the real authenticated user's id later
-    const client_user_id = 'demo-user';
+    const userId = userIdFrom(req);
+    const plaid = plaidClient();
 
-    const request: LinkTokenCreateRequest = {
-      user: { client_user_id },
-      client_name: 'Atticus',
-      products: [Products.Transactions],
-      country_codes: [CountryCode.Us],
+    const payload: any = {
+      user: { client_user_id: userId },
+      client_name: env.APP_NAME(),
+      products: ['transactions'],               // start small; add 'auth' later if needed
+      country_codes: ['US'],
       language: 'en',
-      // If/when you enable OAuth institutions, set PLAID_REDIRECT_URI in Vercel
-      // and then uncomment the next line:
-      // redirect_uri: process.env.PLAID_REDIRECT_URI,
     };
 
-    const plaid = getPlaidClient();
-    const { data } = await plaid.linkTokenCreate(request);
+    // Optional OAuth redirect URI if you plan to support OAuth institutions later
+    const redirect = env.PLAID_REDIRECT_URI();
+    if (redirect) payload.redirect_uri = redirect;
 
-    return NextResponse.json({ link_token: data.link_token }, { status: 200 });
-  } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.response?.data || e?.message || 'plaid error' },
-      { status: 500 }
-    );
+    const { data } = await plaid.linkTokenCreate(payload);
+    return jsonOK({ ok: true, link_token: data.link_token });
+  } catch (err: any) {
+    console.error('create-link-token error:', err?.response?.data || err?.message || err);
+    return jsonErr('Failed to create link token', 500);
   }
 }
