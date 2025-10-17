@@ -1,71 +1,78 @@
+// src/app/plaid/page.tsx
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Script from 'next/script';
 
-// --- add this block ---
-type PlaidCreateOpts = {
+type LinkHandler = { open: () => void };
+type PlaidCreateOptions = {
   token: string;
-  onSuccess: (public_token: string, metadata: unknown) => void;
-  onExit: () => void;
+  onSuccess: (public_token: string) => void;
+  onExit?: () => void;
 };
-type PlaidHandler = { open: () => void };
-
 declare global {
   interface Window {
-    Plaid?: { create: (opts: PlaidCreateOpts) => PlaidHandler };
+    Plaid?: { create: (opts: PlaidCreateOptions) => LinkHandler };
   }
 }
-// --- end add ---
 
 export default function PlaidTestPage() {
-  const [linkToken, setLinkToken] = useState<string | null>(null);
-  const [isReady, setIsReady] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [result, setResult] = useState<string>('');
 
   const fetchLinkToken = useCallback(async () => {
-    const res = await fetch('/api/plaid/create-link-token', { cache: 'no-store' });
-    const json = await res.json();
-    setLinkToken(json.link_token);
+    const r = await fetch('/api/plaid/create-link-token', { cache: 'no-store' });
+    const j = await r.json();
+    setToken(j.link_token);
   }, []);
 
-  const openPlaid = useCallback(() => {
-    if (!isReady || !linkToken || !window.Plaid) return;
+  useEffect(() => {
+    // Warm a link token before the click
+    fetchLinkToken();
+  }, [fetchLinkToken]);
+
+  const openLink = useCallback(async () => {
+    if (!ready || !token || !window.Plaid) return;
     const handler = window.Plaid.create({
-      token: linkToken,
-      onSuccess: (public_token) => {
-        console.log('Plaid public_token:', public_token);
-        alert('Connected! public_token in console.');
+      token,
+      onSuccess: async (public_token) => {
+        // Exchange on server; store access_token securely there
+        const res = await fetch('/api/plaid/exchange', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ public_token }),
+        });
+        const j = await res.json();
+        if (j.ok) {
+          setResult(`Linked ✅ item_id=${j.item_id}`);
+        } else {
+          setResult(`Exchange failed ❌`);
+        }
       },
       onExit: () => {},
     });
     handler.open();
-  }, [isReady, linkToken]);
-
-  const handleClick = useCallback(async () => {
-    if (!linkToken) await fetchLinkToken();
-    openPlaid();
-  }, [linkToken, fetchLinkToken, openPlaid]);
+  }, [ready, token]);
 
   return (
     <>
       <Script
         src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"
         strategy="afterInteractive"
-        onLoad={() => setIsReady(true)}
+        onLoad={() => setReady(true)}
       />
       <main style={{ display: 'grid', placeItems: 'center', minHeight: '60vh' }}>
-        <button
-          onClick={handleClick}
-          style={{
-            padding: '12px 18px',
-            borderRadius: 8,
-            border: '1px solid #444',
-            background: '#111',
-            color: '#fff',
-          }}
-        >
-          Connect a bank (Plaid sandbox)
-        </button>
+        <div style={{ textAlign: 'center' }}>
+          <h1>Connect a bank (Plaid sandbox)</h1>
+          <button onClick={openLink} style={{ padding: '10px 16px', borderRadius: 8 }}>
+            Connect a bank
+          </button>
+          {result && <p style={{ marginTop: 12 }}>{result}</p>}
+          <p style={{ marginTop: 8, color: '#666' }}>
+            After linking, try <code>/api/plaid/accounts</code> and <code>/api/plaid/transactions</code>.
+          </p>
+        </div>
       </main>
     </>
   );
