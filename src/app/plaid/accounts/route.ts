@@ -1,5 +1,5 @@
 // src/app/api/plaid/accounts/route.ts
-import { jsonErr, jsonOK, getItemRowForUser, plaidClient, userIdFrom } from '../../_lib/utils';
+import { jsonErr, jsonOK, getItemRowForUser, plaidClient, userIdFrom } from '../../api/_lib/utils';
 
 export const runtime = 'nodejs';
 
