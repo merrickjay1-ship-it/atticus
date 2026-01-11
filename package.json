@@ -9,14 +9,14 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.4.0",
+    "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.57.2",
     "next": "15.5.9",
+    "plaid": "^15.0.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "stripe": "^18.5.0",
-    "twilio": "^5.9.0",
-    "plaid": "^15.0.0"
+    "twilio": "^5.9.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
