@@ -56,8 +56,6 @@ export function userIdFrom(req: Request) {
 }
 // --- Plaid helpers ---
 
-import { createClient } from "@supabase/supabase-js";
-
 export async function getItemRowForUser(userId: string, itemId: string | null) {
   if (!itemId) return null;
 
