@@ -2,7 +2,7 @@
 import { jsonErr, jsonOK, getItemRowForUser, plaidClient, userIdFrom } from "../../api/_lib/utils";
 
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 function iso(d: Date) {
   return d.toISOString().slice(0, 10);
