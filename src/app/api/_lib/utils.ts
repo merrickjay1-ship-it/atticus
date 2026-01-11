@@ -54,3 +54,32 @@ export function userIdFrom(req: Request) {
   const h = (req.headers.get('x-user-id') || '').trim();
   return h || env.DEMO_USER_ID();
 }
+// --- Plaid helpers ---
+
+import { createClient } from "@supabase/supabase-js";
+
+export async function getItemRowForUser(userId: string, itemId: string | null) {
+  if (!itemId) return null;
+
+  const supabaseUrl =
+    process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Missing SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) / SUPABASE_SERVICE_ROLE_KEY");
+  }
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false },
+  });
+
+  const { data, error } = await supabase
+    .from("plaid_items")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("item_id", itemId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
