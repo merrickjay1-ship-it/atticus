@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const cookieStore = await cookies();
 
@@ -14,8 +16,13 @@ export async function GET() {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
-          for (const { name, value, options } of cookiesToSet) {
-            cookieStore.set(name, value, options);
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {
+            // If this is ever called from a context that can't set cookies,
+            // we just ignore it (common in some server-only contexts).
           }
         },
       },
@@ -31,8 +38,6 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // RLS will already restrict rows to this user,
-  // but we also filter explicitly (defense-in-depth).
   const { data, error } = await supabase
     .from("goals")
     .select("id, title, target_amount, created_at")
