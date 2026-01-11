@@ -1,5 +1,6 @@
 // src/app/api/plaid/webhook/route.ts
-import { jsonOK } from '../../_lib/utils';
+import { jsonOK } from 'from '../../api/_lib/utils'
+';
 
 export const runtime = 'nodejs';
 
