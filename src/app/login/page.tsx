@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -8,63 +8,56 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export default function LoginPage() {
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
-  const [sent, setSent] = useState(false);
-  const [msg, setMsg] = useState("");
+type Goal = {
+  id: string;
+  title: string;
+  target_amount: number | null;
+  created_at: string;
+};
 
-  async function sendCode() {
-    setMsg("");
-    const { error } = await supabase.auth.signInWithOtp({ phone });
-    if (error) return setMsg(error.message);
-    setSent(true);
-    setMsg("Code sent.");
-  }
+export default function GoalsPage() {
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [msg, setMsg] = useState("Loading...");
 
-  async function verifyCode() {
-    setMsg("");
-    const { error } = await supabase.auth.verifyOtp({
-      phone,
-      token: code,
-      type: "sms",
-    });
-    if (error) return setMsg(error.message);
-    window.location.href = "/goals";
-  }
+  useEffect(() => {
+    (async () => {
+      const { data: { user }, error: userErr } = await supabase.auth.getUser();
+
+      if (userErr || !user) {
+        setMsg("Not logged in. Go back to /login");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("goals")
+        .select("id, title, target_amount, created_at")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        setMsg(error.message);
+        return;
+      }
+
+      setGoals(data ?? []);
+      setMsg("");
+    })();
+  }, []);
 
   return (
-    <div style={{ maxWidth: 420, margin: "60px auto", padding: 16 }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700 }}>Log in</h1>
-
-      <label style={{ display: "block", marginTop: 16 }}>Phone</label>
-      <input
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
-        placeholder="+18015551234"
-        style={{ width: "100%", padding: 10, marginTop: 8 }}
-      />
-
-      {!sent ? (
-        <button onClick={sendCode} style={{ marginTop: 16, padding: 10, width: "100%" }}>
-          Send code
-        </button>
-      ) : (
-        <>
-          <label style={{ display: "block", marginTop: 16 }}>Code</label>
-          <input
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="123456"
-            style={{ width: "100%", padding: 10, marginTop: 8 }}
-          />
-          <button onClick={verifyCode} style={{ marginTop: 16, padding: 10, width: "100%" }}>
-            Verify + continue
-          </button>
-        </>
-      )}
+    <div style={{ maxWidth: 720, margin: "60px auto", padding: 16 }}>
+      <h1 style={{ fontSize: 24, fontWeight: 700 }}>Goals</h1>
 
       {msg ? <p style={{ marginTop: 16 }}>{msg}</p> : null}
+
+      <ul style={{ marginTop: 16 }}>
+        {goals.map((g) => (
+          <li key={g.id} style={{ padding: 12, border: "1px solid #333", borderRadius: 8, marginBottom: 10 }}>
+            <div style={{ fontWeight: 600 }}>{g.title}</div>
+            <div style={{ opacity: 0.8 }}>Target: {g.target_amount ?? "—"}</div>
+            <div style={{ opacity: 0.6, fontSize: 12 }}>{new Date(g.created_at).toLocaleString()}</div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
