@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
 function getBaseUrl() {
-  // Prefer Vercel-provided domain in production; fall back to local
   const vercel = process.env.VERCEL_URL;
   if (vercel) return `https://${vercel}`;
   return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -17,15 +16,14 @@ export async function POST(req: Request) {
     );
   }
 
-  // Create the Stripe client at request time (prevents build-time crash)
   const stripe = new Stripe(secret);
 
-  // Accept priceId from the request body or default to Founders
+  // Read body safely
   let body: any = {};
   try {
     body = await req.json();
   } catch {
-    // no body provided is fine
+    body = {};
   }
 
   const priceId =
@@ -48,14 +46,20 @@ export async function POST(req: Request) {
       cancel_url: `${base}/cancel`,
       allow_promotion_codes: true,
 
-      // helpful now + essential later when we wire webhooks → Supabase
-      client_reference_id: body?.userId ?? undefined,
+      // keeps things future-proof for webhook → Supabase mapping later
       metadata: { priceId },
     });
 
-    return NextResponse.redirect(session.url!, { status: 303 });
+    return NextResponse.json({ ok: true, url: session.url });
   } catch (err: any) {
-    const msg = err?.message || "Stripe error";
-    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: err?.message || "Stripe error" },
+      { status: 500 }
+    );
   }
+}
+
+// Health check (super useful for quick verification)
+export async function GET() {
+  return NextResponse.json({ ok: true });
 }
