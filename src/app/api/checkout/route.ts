@@ -18,9 +18,7 @@ export async function POST(req: Request) {
   }
 
   // Create the Stripe client at request time (prevents build-time crash)
-  const stripe = new Stripe(secret, {
-    apiVersion: "2024-06-20",
-  });
+  const stripe = new Stripe(secret);
 
   // Accept priceId from the request body or default to Founders
   let body: any = {};
@@ -31,9 +29,7 @@ export async function POST(req: Request) {
   }
 
   const priceId =
-    body?.priceId ??
-    process.env.NEXT_PUBLIC_PRICE_ID_FOUNDERS ??
-    null;
+    body?.priceId ?? process.env.NEXT_PUBLIC_PRICE_ID_FOUNDERS ?? null;
 
   if (!priceId) {
     return NextResponse.json(
@@ -54,12 +50,9 @@ export async function POST(req: Request) {
 
       // helpful now + essential later when we wire webhooks → Supabase
       client_reference_id: body?.userId ?? undefined,
-      metadata: {
-        priceId,
-      },
+      metadata: { priceId },
     });
 
-    // Redirect the client straight to Stripe Checkout
     return NextResponse.redirect(session.url!, { status: 303 });
   } catch (err: any) {
     const msg = err?.message || "Stripe error";
