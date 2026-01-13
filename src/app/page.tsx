@@ -7,9 +7,18 @@ export default function Page() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ priceId }),
+        redirect: "follow",
       });
 
-      const data = await res.json();
+      // If the API route returns a redirect (common), fetch() may follow it and we can use res.url.
+      if (res.redirected && res.url) {
+        window.location.href = res.url;
+        return;
+      }
+
+      // Otherwise expect JSON { url }
+      const data = await res.json().catch(() => null);
+
       if (data?.url) {
         window.location.href = data.url; // redirect to Stripe Checkout
       } else {
@@ -41,18 +50,14 @@ export default function Page() {
         </button>
 
         <button
-          onClick={() =>
-            handleCheckout(process.env.NEXT_PUBLIC_PRICE_ID_PLUS!)
-          }
+          onClick={() => handleCheckout(process.env.NEXT_PUBLIC_PRICE_ID_PLUS!)}
           className="rounded-xl px-4 py-2 border"
         >
           Plus $39/mo
         </button>
 
         <button
-          onClick={() =>
-            handleCheckout(process.env.NEXT_PUBLIC_PRICE_ID_PRO!)
-          }
+          onClick={() => handleCheckout(process.env.NEXT_PUBLIC_PRICE_ID_PRO!)}
           className="rounded-xl px-4 py-2 border"
         >
           Pro $99/mo
